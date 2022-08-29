@@ -1,5 +1,6 @@
 package com.gosssen.springbootmall.dao.impl;
 
+import com.gosssen.springbootmall.constant.ProductCategory;
 import com.gosssen.springbootmall.dao.ProductDao;
 import com.gosssen.springbootmall.dto.ProductRequest;
 import com.gosssen.springbootmall.model.Product;
@@ -23,12 +24,26 @@ public class ProductDaoImpl implements ProductDao {
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Override
-    public List<Product> getProducts() {
-        String sql = "SELECT product_id, product_name, category, image_url, price, " +
-                "stock, description, created_date, last_modified_date FROM product ";
+    public List<Product> getProducts(ProductCategory category, String search) {
+        StringBuilder sql = new StringBuilder()
+                .append("SELECT ")
+                .append("product_id, product_name, category, image_url, price, ")
+                .append("stock, description, created_date, last_modified_date ")
+                .append("FROM product WHERE 1 = 1 ");
 
         Map<String, Object> map = new HashMap<>();
-        List<Product> productList = namedParameterJdbcTemplate.query(sql, map, new ProductRowMapper());
+
+        if (category != null) {
+            sql.append("AND category = :category ");
+            map.put("category", category.name());
+        }
+
+        if (search != null) {
+            sql.append("AND product_name LIKE :search ");
+            map.put("search", "%" + search + "%");
+        }
+
+        List<Product> productList = namedParameterJdbcTemplate.query(sql.toString(), map, new ProductRowMapper());
 
         return productList;
     }
@@ -57,7 +72,7 @@ public class ProductDaoImpl implements ProductDao {
 
         Map<String, Object> map = new HashMap<>();
         map.put("productName", productRequest.getProductName());
-        map.put("category", productRequest.getCategory().toString());
+        map.put("category", productRequest.getCategory().name());
         map.put("imageUrl", productRequest.getImageUrl());
         map.put("price", productRequest.getPrice());
         map.put("stock", productRequest.getStock());
